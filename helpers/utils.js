@@ -37,26 +37,35 @@ module.exports.uploadFileParamsPromise = function (req) {
 
     let form = new formidable.IncomingForm();
 
-    return new Promise((resolve, reject) => {
-        form.parse(req, function (err, fields, files) {
+    try {
+        return new Promise((resolve, reject) => {
+            form.parse(req, function (err, fields, files) {
 
-            function removeEmptyStringElements(obj) {
-                for (var prop in obj) {
-                    if (typeof obj[prop] === 'object') {// dive deeper in
-                        removeEmptyStringElements(obj[prop]);
-                    } else if (obj[prop] === '') {// delete elements that are empty strings
-                        delete obj[prop];
-                    }
+                if (err) {
+                    console.log(err)
                 }
-                return obj;
-            }
-            removeEmptyStringElements(fields);
 
-            parsedFormData = {
-                fields: fields,
-                files: files
-            }
-            resolve(parsedFormData);
+                function removeEmptyStringElements(obj) {
+                    for (var prop in obj) {
+                        if (typeof obj[prop] === 'object') {// dive deeper in
+                            removeEmptyStringElements(obj[prop]);
+                        } else if (obj[prop] === '') {// delete elements that are empty strings
+                            delete obj[prop];
+                        }
+                    }
+                    return obj;
+                }
+                removeEmptyStringElements(fields);
+
+                parsedFormData = {
+                    fields: fields,
+                    files: files
+                }
+                resolve(parsedFormData);
+            })
         })
-    })
+    }
+    catch (err) {
+        return Promise.reject(err)
+    }
 }

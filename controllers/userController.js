@@ -7,54 +7,68 @@ module.exports = function (dirname) {
     var router = express.Router();
 
     router.post('/login', (req, res) => {
-
-        utils.readDataFromDB(dirname + '/Db/user.js')
-            .then((userData) => {
-                for (let i = 0; i < userData.length - 1; i++) {
-                    if (userData[i][req.body.email]) {
-                        res.status(200).send(userData[i][req.body.email])
-                        break;
+        try {
+            utils.readDataFromDB(dirname + '/Db/user.json')
+                .then((userData) => {
+                    for (let i = 0; i < userData.length; i++) {
+                        if (userData[i].hasOwnProperty([req.body.email])) {
+                            res.status(200).send(userData[i][req.body.email])
+                            break;
+                        }
+                        if (i == userData.length - 1) {
+                            res.status(400).send('invalid user credentials')
+                        }
                     }
-                    if (index == userData.length - 1) {
-                        res.status(400).send('invalid user credentials')
-                    }
-                }
 
-            })
+                }).
+                catch((err) => {
+                    res.status(400).send(err)
+                })
+        }
+        catch (err) {
+            res.status(500).send(err)
+        }
+
+
 
     })
 
-    router.post('/createuser', async (req, res) => {
+    router.post('/create', async (req, res) => {
 
         let parsedData = {};
-
-        utils.uploadFileParamsPromise(req)
-            .then((formData) => {
-                parsedData = formData
-                return utils.readDataFromDB(dirname + '/Db/user.js')
-            })
-            .then((userData) => {
-                let userToBeAdded = {}
-                userToBeAdded[parsedData.fields.email] = {
-                    name: parsedData.fields.name,
-                    age: parsedData.fields.age,
-                    skills: parsedData.fields.skills
-                }
-
-                return new Promise((resolve) => {
-                    userData.push(userToBeAdded)
-                    resolve(userData)
+        try {
+            utils.uploadFileParamsPromise(req)
+                .then((formData) => {
+                    parsedData = formData
+                    return utils.readDataFromDB(dirname + '/Db/user.json')
                 })
-            })
-            .then((addedUserData) => {
-                return utils.writeDataToDB(dirname + '/Db/user.js', addedUserData)
-            })
-            .then(() => {
-                res.status(200).send('user is added successfully');
-            })
-            .catch((err) => {
-                res.status(400).send(err);
-            })
+                .then((userData) => {
+                    let userToBeAdded = {}
+                    userToBeAdded[parsedData.fields.email] = {
+                        name: parsedData.fields.name,
+                        age: parsedData.fields.age,
+                        skill: parsedData.fields.skill
+                    }
+
+                    return new Promise((resolve) => {
+                        userData.push(userToBeAdded)
+                        resolve(userData)
+                    })
+                })
+                .then((addedUserData) => {
+                    return utils.writeDataToDB(dirname + '/Db/user.json', addedUserData)
+                })
+                .then(() => {
+                    res.status(200).send({ message: 'user is added successfully' });
+                })
+                .catch((err) => {
+                    res.status(400).send(err);
+                })
+
+        }
+        catch (err) {
+            res.status(500).send(err);
+        }
 
     })
 
@@ -90,7 +104,7 @@ module.exports = function (dirname) {
                 return utils.writeDataToDB(dirname + '/Db/deckState.json', deckData)
             })
             .then(() => {
-                res.status(200).send('deck is added successfully');
+                res.status(200).send({ message: 'deck is added successfully' });
             })
             .catch((err) => {
                 res.status(400).send(err.message)
@@ -108,13 +122,16 @@ module.exports = function (dirname) {
                             resolve(deckData[i])
                         }
                         if (i == deckData.length - 1) {
-                            resolve('No deck is found')
+                            resolve({ message: 'No deck is found' })
                         }
                     }
                 })
             })
-            .then((readResultOfDeck)=>{
+            .then((readResultOfDeck) => {
                 res.status(200).send(readResultOfDeck)
+            })
+            .catch((err) => {
+                res.status(500).send(readResultOfDeck)
             })
 
     })
